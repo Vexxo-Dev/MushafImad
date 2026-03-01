@@ -124,6 +124,24 @@ public struct MushafView: View {
         }
         .environment(\.colorScheme, readingTheme == .night ? .dark : .light)
         .opacity(viewModel.contentOpacity)
+        .overlay(alignment: .bottom) {
+            if let verse = viewModel.selectedVerse, externalLongPressHandler == nil {
+                verseActionBar(for: verse)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: viewModel.selectedVerse?.verseID)
+        .sheet(isPresented: $viewModel.showTafsir) {
+            if let verse = viewModel.tafsirVerse {
+                TafseerView(
+                    surahId: verse.chapterNumber,
+                    ayahId: verse.number,
+                    surahName: verse.chapter?.arabicTitle ?? ""
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+        }
         .onChange(of: viewModel.scrollPosition) { oldPage, newPage in
             guard let newPage = newPage else { return }
             Task {
@@ -183,6 +201,46 @@ public struct MushafView: View {
             default:
                 break
             }
+        }
+    }
+
+    // MARK: - Verse Action Bar
+
+    @ViewBuilder
+    private func verseActionBar(for verse: Verse) -> some View {
+        VStack(spacing: 0) {
+            Spacer()
+            HStack(spacing: 12) {
+                Button {
+                    viewModel.tafsirVerse = verse
+                    viewModel.selectedVerse = nil
+                    viewModel.showTafsir = true
+                } label: {
+                    Label(
+                        String(localized: "تفسير"),
+                        systemImage: "text.book.closed.fill"
+                    )
+                    .font(.system(size: 15, weight: .semibold))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.accentColor, in: Capsule())
+                    .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    viewModel.clearSelection()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .frame(width: 36, height: 36)
+                        .background(.regularMaterial, in: Circle())
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 32)
         }
     }
 
