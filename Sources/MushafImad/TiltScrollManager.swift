@@ -25,8 +25,13 @@ public class TiltScrollManager: ObservableObject {
         case textContinuous
     }
 
+#if canImport(UIKit)
     private let motionManager = CMMotionManager()
     private var displayLink: CADisplayLink?
+#else
+    private let motionManager: Any? = nil
+    private var displayLink: Any? = nil
+#endif
     private var settingsCancellable: AnyCancellable?
     // Configurable settings
     @AppStorage("tilt_scroll_enabled") public var isEnabled: Bool = false {
@@ -92,6 +97,7 @@ public class TiltScrollManager: ObservableObject {
     }
     
     private func startMonitoring() {
+#if canImport(UIKit)
         guard !isMonitoring, motionManager.isDeviceMotionAvailable else {
             return
         }
@@ -109,11 +115,14 @@ public class TiltScrollManager: ObservableObject {
         
         startDisplayLink()
         isMonitoring = true
+#endif
     }
     
     private func stopMonitoring() {
+#if canImport(UIKit)
         motionManager.stopDeviceMotionUpdates()
         stopDisplayLink()
+#endif
         scrollVelocity = 0
         isMonitoring = false
     }
@@ -128,6 +137,7 @@ public class TiltScrollManager: ObservableObject {
         textNeutralPitch = nil
     }
     
+#if canImport(UIKit)
     private final class DisplayLinkProxy: NSObject {
         weak var manager: TiltScrollManager?
         @MainActor @objc func step() { manager?.updateScrollPosition() }
@@ -227,6 +237,7 @@ public class TiltScrollManager: ObservableObject {
             scrollVelocity = 0
         }
     }
+#endif
     
     private func updateScrollPosition() {
 #if canImport(UIKit)

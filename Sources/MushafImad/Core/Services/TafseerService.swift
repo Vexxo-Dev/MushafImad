@@ -268,7 +268,7 @@ extension TafseerImportState {
         case .fetching:           return String(localized: "Downloading tafseer data…")
         case .importing(let p):   return String(localized: "Importing tafseer (\(Int(p * 100))%)…")
         case .ready:              return String(localized: "Tafseer ready.")
-        case .failed(let e):      return e.localizedDescription ?? ""
+        case .failed(let e):      return e.localizedDescription
         }
     }
 }
