@@ -95,6 +95,11 @@ public final class ReadingProgressTracker: ObservableObject {
     private var confidenceAccumulator: Float = 0
     private var confidenceSampleCount: Int = 0
     
+    /// Pause tracking: total wall-clock time spent in paused state during this session.
+    private var accumulatedPausedDuration: TimeInterval = 0
+    /// When the current pause started (nil if not currently paused).
+    private var pauseStartTime: Date?
+    
     /// Current page context
     private var currentPageNumber: Int = 0
     private var currentPageVerses: [Verse] = []
@@ -136,6 +141,8 @@ public final class ReadingProgressTracker: ObservableObject {
         confidenceAccumulator = 0
         confidenceSampleCount = 0
         lastMappedVerse = nil
+        accumulatedPausedDuration = 0
+        pauseStartTime = nil
         
         isTracking = true
         
@@ -150,6 +157,12 @@ public final class ReadingProgressTracker: ObservableObject {
         // Create final session for persistence and add to pending queue
         if let session = finalizeSession() {
             pendingSessions.append(session)
+        }
+        
+        // If we were paused, close out the current pause interval
+        if let pauseStart = pauseStartTime {
+            accumulatedPausedDuration += Date().timeIntervalSince(pauseStart)
+            pauseStartTime = nil
         }
         
         // Reset state
@@ -175,6 +188,12 @@ public final class ReadingProgressTracker: ObservableObject {
             gazePoint: gazePoint,
             verses: currentPageVerses
         ) else {
+            // Gaze is outside the page content area — clear stale dwell state so an
+            // out-of-bounds sample cannot silently extend or complete a dwell on the
+            // next valid sample.
+            currentDwellVerse = nil
+            dwellStartTime = nil
+            lastLineDwellStart = nil
             return
         }
         
@@ -280,6 +299,12 @@ public final class ReadingProgressTracker: ObservableObject {
             avgConfidence = 0
         }
         
+        // Compute active (non-paused) duration. If we are currently paused, include
+        // the ongoing pause interval in the total paused time so it is excluded.
+        let now = Date()
+        let totalPaused = accumulatedPausedDuration + (pauseStartTime.map { now.timeIntervalSince($0) } ?? 0)
+        let activeDuration = max(0, now.timeIntervalSince(startTime) - totalPaused)
+        
         let session = ReadingSession(
             pageNumber: currentPageNumber,
             lastVerseID: verse?.verseID ?? 0,
@@ -287,8 +312,8 @@ public final class ReadingProgressTracker: ObservableObject {
             verseNumber: verse?.number ?? 0,
             lastLineIndex: activeLineIndex,
             startedAt: startTime,
-            lastUpdatedAt: Date(),
-            activeReadingDuration: Date().timeIntervalSince(startTime),
+            lastUpdatedAt: now,
+            activeReadingDuration: activeDuration,
             trackingMethod: trackingMethod,
             completedPage: pageCompleted,
             averageConfidence: avgConfidence
@@ -297,11 +322,29 @@ public final class ReadingProgressTracker: ObservableObject {
         currentSession = session
         
         AppLogger.shared.info(
-            "Reading session finalized — page \(currentPageNumber), verse \(verse?.chapterNumber ?? 0):\(verse?.number ?? 0), duration \(String(format: "%.1f", Date().timeIntervalSince(startTime)))s",
+            "Reading session finalized — page \(currentPageNumber), verse \(verse?.chapterNumber ?? 0):\(verse?.number ?? 0), active duration \(String(format: "%.1f", activeDuration))s (paused \(String(format: "%.1f", totalPaused))s)",
             category: .ui
         )
         
         return session
+    }
+    
+    // MARK: - Pause / Resume
+    
+    /// Record the start of a pause interval. Call when tracking is interrupted
+    /// (e.g. app backgrounded, settings sheet presented, face lost).
+    public func pauseTracking() {
+        guard isTracking, pauseStartTime == nil else { return }
+        pauseStartTime = Date()
+        AppLogger.shared.debug("Reading progress tracker paused", category: .ui)
+    }
+    
+    /// Close the current pause interval and resume accumulating active time.
+    public func resumeTracking() {
+        guard isTracking, let pauseStart = pauseStartTime else { return }
+        accumulatedPausedDuration += Date().timeIntervalSince(pauseStart)
+        pauseStartTime = nil
+        AppLogger.shared.debug("Reading progress tracker resumed (total paused so far: \(String(format: "%.1f", accumulatedPausedDuration))s)", category: .ui)
     }
     
     /// Persist the current session to SwiftData.

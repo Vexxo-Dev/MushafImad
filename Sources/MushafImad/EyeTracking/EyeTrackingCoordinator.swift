@@ -22,7 +22,7 @@ import SwiftData
 /// @StateObject private var eyeCoordinator = EyeTrackingCoordinator()
 /// // In your view body:
 /// .onAppear { eyeCoordinator.activate(pageNumber: 1, verses: [...], pageFrame: ...) }
-/// .onDisappear { eyeCoordinator.deactivate() }
+/// .onDisappear { eyeCoordinator.deactivate(context: modelContext) }
 /// ```
 @MainActor
 public final class EyeTrackingCoordinator: ObservableObject {
@@ -48,14 +48,18 @@ public final class EyeTrackingCoordinator: ObservableObject {
     @AppStorage("eye_tracking_enabled") public var isEnabled: Bool = false
     @AppStorage("eye_tracking_auto_highlight") private var autoHighlight: Bool = true
     
-    public func setEnabled(_ enabled: Bool) {
+    /// Enable or disable eye-tracking.
+    ///
+    /// Passing `context` when disabling ensures any buffered sessions are
+    /// flushed to SwiftData before the coordinator clears its state.
+    public func setEnabled(_ enabled: Bool, context: ModelContext? = nil) {
         isEnabled = enabled
         if enabled {
             if eyeTrackingService.isSupported && !useFallbackMode {
                 eyeTrackingService.startTracking()
             }
         } else {
-            deactivate()
+            deactivate(context: context)
         }
     }
     @AppStorage("eye_tracking_auto_advance") private var autoAdvance: Bool = false
@@ -217,6 +221,7 @@ public final class EyeTrackingCoordinator: ObservableObject {
     
     /// Pause tracking (app backgrounded, sheet presented, etc.).
     public func pause() {
+        progressTracker.pauseTracking()
         fallbackEstimator.pause()
         if eyeTrackingService.isSupported && !useFallbackMode {
             eyeTrackingService.stopTracking()
@@ -225,6 +230,7 @@ public final class EyeTrackingCoordinator: ObservableObject {
     
     /// Resume tracking after a pause.
     public func resume() {
+        progressTracker.resumeTracking()
         fallbackEstimator.resume()
         if eyeTrackingService.isSupported && !useFallbackMode {
             eyeTrackingService.startTracking()
