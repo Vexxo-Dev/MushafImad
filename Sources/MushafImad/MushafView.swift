@@ -75,11 +75,13 @@ public struct MushafView: View {
 
     @State private var viewModel = ViewModel()
     @StateObject private var playerViewModel = QuranPlayerViewModel()
+    @StateObject private var eyeTrackingCoordinator = EyeTrackingCoordinator()
     @EnvironmentObject private var reciterService: ReciterService
     @EnvironmentObject private var toastManager: ToastManager
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var playingVerse: Verse? = nil
+    @State private var pageContentFrame: CGRect = .zero
 #if canImport(UIKit)
     @StateObject private var tiltManager = TiltScrollManager()
 #endif
@@ -88,6 +90,7 @@ public struct MushafView: View {
     @AppStorage("display_mode") private var displayMode: DisplayMode = .text
     @AppStorage("text_font_size") private var textFontSize: Double = 24.0
     @State private var textModeInitialChapter: Int = 1
+    @State private var showEyeTrackingSettings: Bool = false
 
 
     public init(initialPage: Int? = nil,
@@ -122,6 +125,16 @@ public struct MushafView: View {
             } else {
                 pageView
                     .foregroundStyle(.naturalBlack)
+            }
+            
+            // Eye tracking overlay (experimental)
+            if eyeTrackingCoordinator.isEnabled && eyeTrackingCoordinator.showOverlay {
+                EyeTrackingOverlayView(
+                    tracker: eyeTrackingCoordinator.progressTracker,
+                    currentGaze: eyeTrackingCoordinator.currentGaze,
+                    showDebugInfo: eyeTrackingCoordinator.showDebugInfo,
+                    trackingState: eyeTrackingCoordinator.trackingState
+                )
             }
         }
         .environment(\.colorScheme, readingTheme == .night ? .dark : .light)
@@ -213,6 +226,12 @@ public struct MushafView: View {
 #if canImport(UIKit)
             tiltManager.deactivate()
 #endif
+            eyeTrackingCoordinator.deactivate()
+        }
+        .sheet(isPresented: $showEyeTrackingSettings) {
+            EyeTrackingSettingsView(eyeTrackingService: eyeTrackingCoordinator.eyeTrackingService)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
     }
     // MARK: - Verse Action Bar
@@ -279,6 +298,13 @@ public struct MushafView: View {
             displayMode = (displayMode == .image) ? .text : .image
         } label: {
             Image(systemName: displayMode == .image ? "text.justify.leading" : "book.pages")
+        }
+        // Eye tracking settings button (experimental)
+        Button {
+            showEyeTrackingSettings = true
+        } label: {
+            Image(systemName: "eye")
+                .symbolEffect(.pulse, isActive: eyeTrackingCoordinator.isEnabled)
         }
     }
 
