@@ -71,6 +71,9 @@ public final class ReadingProgressTracker: ObservableObject {
     
     // MARK: - Private State
     
+    /// Tracking method used for current session
+    public var trackingMethod: TrackingMethod = .eyeTracking
+    
     /// Currently tracked verse and the time the gaze first landed on it.
     private var currentDwellVerse: Verse?
     private var dwellStartTime: Date?
@@ -265,7 +268,7 @@ public final class ReadingProgressTracker: ObservableObject {
             startedAt: startTime,
             lastUpdatedAt: Date(),
             activeReadingDuration: Date().timeIntervalSince(startTime),
-            trackingMethod: .eyeTracking,
+            trackingMethod: trackingMethod,
             completedPage: pageCompleted,
             averageConfidence: avgConfidence
         )

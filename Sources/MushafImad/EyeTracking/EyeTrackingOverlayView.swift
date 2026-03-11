@@ -105,6 +105,11 @@ public struct EyeTrackingOverlayView: View {
                     pulseScale = 1.4
                 }
             }
+            .onDisappear {
+                withAnimation {
+                    pulseScale = 1.0
+                }
+            }
     }
     
     // MARK: - Progress Bar
@@ -240,7 +245,7 @@ public struct EyeTrackingOverlayView: View {
                             .font(.system(size: 10, design: .monospaced))
                     }
                     
-                    Text("Line: \(tracker.activeLineIndex) / 14")
+                    Text("Line: \(tracker.activeLineIndex) / \(GazeToVerseMapper.linesPerPage - 1)")
                         .font(.system(size: 10, design: .monospaced))
                     
                     if let verse = tracker.activeVerse {

@@ -29,11 +29,11 @@ public struct EyeTrackingSettingsView: View {
     
     // MARK: - Environment
     
-    @ObservedObject var eyeTrackingService: EyeTrackingService
+    @ObservedObject var coordinator: EyeTrackingCoordinator
     @Environment(\.dismiss) private var dismiss
     
-    public init(eyeTrackingService: EyeTrackingService) {
-        self.eyeTrackingService = eyeTrackingService
+    public init(coordinator: EyeTrackingCoordinator) {
+        self.coordinator = coordinator
     }
     
     public var body: some View {
@@ -69,11 +69,7 @@ public struct EyeTrackingSettingsView: View {
                         }
                     }
                     .onChange(of: isEnabled) { _, newValue in
-                        if newValue {
-                            eyeTrackingService.startTracking()
-                        } else {
-                            eyeTrackingService.stopTracking()
-                        }
+                        coordinator.setEnabled(newValue)
                     }
                     
                     // Device support status
@@ -82,15 +78,15 @@ public struct EyeTrackingSettingsView: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         HStack(spacing: 4) {
-                            Image(systemName: eyeTrackingService.isSupported ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .foregroundStyle(eyeTrackingService.isSupported ? .green : .red)
-                            Text(eyeTrackingService.isSupported ? String(localized: "Supported") : String(localized: "Not Available"))
+                            Image(systemName: coordinator.eyeTrackingService.isSupported ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                .foregroundStyle(coordinator.eyeTrackingService.isSupported ? .green : .red)
+                            Text(coordinator.eyeTrackingService.isSupported ? String(localized: "Supported") : String(localized: "Not Available"))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
                     }
                     
-                    if !eyeTrackingService.isSupported {
+                    if !coordinator.eyeTrackingService.isSupported {
                         Toggle(isOn: $useFallbackMode) {
                             Label {
                                 VStack(alignment: .leading, spacing: 2) {
@@ -265,5 +261,5 @@ public struct EyeTrackingSettingsView: View {
 // MARK: - Preview
 
 #Preview {
-    EyeTrackingSettingsView(eyeTrackingService: EyeTrackingService())
+    EyeTrackingSettingsView(coordinator: EyeTrackingCoordinator())
 }

@@ -226,10 +226,10 @@ public struct MushafView: View {
 #if canImport(UIKit)
             tiltManager.deactivate()
 #endif
-            eyeTrackingCoordinator.deactivate()
+            eyeTrackingCoordinator.deactivate(context: modelContext)
         }
         .sheet(isPresented: $showEyeTrackingSettings) {
-            EyeTrackingSettingsView(eyeTrackingService: eyeTrackingCoordinator.eyeTrackingService)
+            EyeTrackingSettingsView(coordinator: eyeTrackingCoordinator)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
@@ -429,6 +429,36 @@ public struct MushafView: View {
                 if let action = externalPageTapHandler {
                     action()
                 }
+            }
+        )
+        .background(
+            GeometryReader { geo in
+                Color.clear
+                    .onAppear {
+                        let frame = geo.frame(in: .global)
+                        pageContentFrame = frame
+                        if eyeTrackingCoordinator.isEnabled {
+                            let verses = RealmService.shared.getVersesForPage(pageNumber)
+                            eyeTrackingCoordinator.activate(
+                                pageNumber: pageNumber,
+                                verses: verses,
+                                pageFrame: frame,
+                                onPageCompleted: {
+                                    if pageNumber < 604 {
+                                        withAnimation {
+                                            viewModel.scrollPosition = pageNumber + 1
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    .onChange(of: geo.frame(in: .global)) { _, newFrame in
+                        pageContentFrame = newFrame
+                        if eyeTrackingCoordinator.isEnabled {
+                            eyeTrackingCoordinator.updateGeometry(frame: newFrame)
+                        }
+                    }
             }
         )
     }

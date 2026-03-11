@@ -81,6 +81,10 @@ public final class EyeTrackingService: NSObject, ObservableObject {
     
     // MARK: - Configuration
     
+    /// Multiplier used to scale the gaze direction vector from the face lookAtPoint 
+    /// to screen bounds, effectively controlling the tracking sensitivity based on user distance.
+    public var gazeProjectionScale: Float = 8.0
+    
     /// Minimum confidence threshold — gaze samples below this are discarded.
     public var minimumConfidence: Float = 0.3
     
@@ -98,6 +102,7 @@ public final class EyeTrackingService: NSObject, ObservableObject {
     /// Smoothed position accumulator.
     private var smoothedPosition: CGPoint = .zero
     private var hasInitialSample = false
+    private var lastProcessedFrameTimestamp: TimeInterval?
     
     // MARK: - Lifecycle
     
@@ -195,8 +200,8 @@ public final class EyeTrackingService: NSObject, ObservableObject {
         // lookAtPoint Y ranges roughly from -0.05 to 0.05
         
         // Normalize to screen space (inverted X because front camera is mirrored)
-        let normalizedX = CGFloat(0.5 - gazeDirectionX * 8.0)
-        let normalizedY = CGFloat(0.5 - gazeDirectionY * 8.0)
+        let normalizedX = CGFloat(0.5 - gazeDirectionX * gazeProjectionScale)
+        let normalizedY = CGFloat(0.5 - gazeDirectionY * gazeProjectionScale)
         
         // Clamp to screen bounds
         let screenX = min(screenSize.width, max(0, normalizedX * screenSize.width))
@@ -251,6 +256,15 @@ extension EyeTrackingService: ARSessionDelegate {
         let frameTime = frame.timestamp
         
         Task { @MainActor in
+            let shouldProcess: Bool
+            if let lastTime = self.lastProcessedFrameTimestamp {
+                shouldProcess = (frameTime - lastTime) >= (1.0 / 15.0)
+            } else {
+                shouldProcess = true
+            }
+            guard shouldProcess else { return }
+            self.lastProcessedFrameTimestamp = frameTime
+            
             guard let faceAnchor = frame.anchors.compactMap({ $0 as? ARFaceAnchor }).first else {
                 if self.state != .faceLost && self.state != .inactive {
                     self.state = .faceLost

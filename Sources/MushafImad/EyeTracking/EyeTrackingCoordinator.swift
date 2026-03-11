@@ -46,6 +46,17 @@ public final class EyeTrackingCoordinator: ObservableObject {
     /// Whether the feature is enabled by the user.
     @AppStorage("eye_tracking_enabled") public var isEnabled: Bool = false
     @AppStorage("eye_tracking_auto_highlight") private var autoHighlight: Bool = true
+    
+    public func setEnabled(_ enabled: Bool) {
+        isEnabled = enabled
+        if enabled {
+            if eyeTrackingService.isSupported && !useFallbackMode {
+                eyeTrackingService.startTracking()
+            }
+        } else {
+            deactivate()
+        }
+    }
     @AppStorage("eye_tracking_auto_advance") private var autoAdvance: Bool = false
     @AppStorage("eye_tracking_show_overlay") public var showOverlay: Bool = false
     @AppStorage("eye_tracking_show_debug") public var showDebugInfo: Bool = false
@@ -56,6 +67,7 @@ public final class EyeTrackingCoordinator: ObservableObject {
     // MARK: - Private
     
     private var cancellables = Set<AnyCancellable>()
+    private var gazeCancellables = Set<AnyCancellable>()
     private var gazeUpdateTimer: Timer?
     
     // MARK: - Init
@@ -72,8 +84,23 @@ public final class EyeTrackingCoordinator: ObservableObject {
             guard let self else { return }
             if self.autoHighlight {
                 self.gazeHighlightedVerse = verse
+            } else {
+                DispatchQueue.main.async {
+                    self.gazeHighlightedVerse = nil
+                }
             }
         }
+        
+        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                if !self.autoHighlight && self.gazeHighlightedVerse != nil {
+                    self.gazeHighlightedVerse = nil
+                }
+            }
+            .store(in: &cancellables)
+
         
         // Observe eye tracking service state
         eyeTrackingService.$state
@@ -83,6 +110,9 @@ public final class EyeTrackingCoordinator: ObservableObject {
             }
             .store(in: &cancellables)
         
+    }
+    
+    private func setupGazeBindings() {
         // Forward gaze from eye tracking service
         eyeTrackingService.$currentGaze
             .receive(on: DispatchQueue.main)
@@ -92,7 +122,7 @@ public final class EyeTrackingCoordinator: ObservableObject {
                 self.currentGaze = gaze
                 self.progressTracker.processGazePoint(gaze)
             }
-            .store(in: &cancellables)
+            .store(in: &gazeCancellables)
         
         // Forward gaze from fallback estimator
         fallbackEstimator.$estimatedGaze
@@ -105,7 +135,7 @@ public final class EyeTrackingCoordinator: ObservableObject {
                 self.currentGaze = gaze
                 self.progressTracker.processGazePoint(gaze)
             }
-            .store(in: &cancellables)
+            .store(in: &gazeCancellables)
     }
     
     // MARK: - Lifecycle
@@ -125,6 +155,11 @@ public final class EyeTrackingCoordinator: ObservableObject {
     ) {
         guard isEnabled else { return }
         
+        gazeCancellables.removeAll()
+        eyeTrackingService.stopTracking()
+        fallbackEstimator.stopEstimating()
+        setupGazeBindings()
+        
         // Configure the progress tracker
         progressTracker.dwellTimeThreshold = dwellTime
         progressTracker.autoAdvanceEnabled = autoAdvance
@@ -139,8 +174,10 @@ public final class EyeTrackingCoordinator: ObservableObject {
         
         // Start the appropriate gaze source
         if eyeTrackingService.isSupported && !useFallbackMode {
+            progressTracker.trackingMethod = .eyeTracking
             eyeTrackingService.startTracking()
         } else if useFallbackMode || !eyeTrackingService.isSupported {
+            progressTracker.trackingMethod = .heuristic
             fallbackEstimator.arabicWordsPerMinute = readingSpeed
             fallbackEstimator.startForPage(pageFrame: pageFrame)
             trackingState = .tracking(GazePoint(screenPosition: .zero, confidence: 0.5))
@@ -150,10 +187,13 @@ public final class EyeTrackingCoordinator: ObservableObject {
     }
     
     /// Deactivate all tracking.
-    public func deactivate() {
+    public func deactivate(context: ModelContext? = nil) {
         eyeTrackingService.stopTracking()
         fallbackEstimator.stopEstimating()
         progressTracker.stopTracking()
+        if let context = context {
+            progressTracker.persistSession(context: context)
+        }
         gazeHighlightedVerse = nil
         currentGaze = nil
         trackingState = .inactive
@@ -162,15 +202,22 @@ public final class EyeTrackingCoordinator: ObservableObject {
     /// Update geometry after layout changes.
     public func updateGeometry(frame: CGRect) {
         progressTracker.updateGeometry(frame: frame)
+        fallbackEstimator.updateGeometry(frame: frame)
     }
     
     /// Pause tracking (app backgrounded, sheet presented, etc.).
     public func pause() {
         fallbackEstimator.pause()
+        if eyeTrackingService.isSupported && !useFallbackMode {
+            eyeTrackingService.stopTracking()
+        }
     }
     
     /// Resume tracking after a pause.
     public func resume() {
         fallbackEstimator.resume()
+        if eyeTrackingService.isSupported && !useFallbackMode {
+            eyeTrackingService.startTracking()
+        }
     }
 }

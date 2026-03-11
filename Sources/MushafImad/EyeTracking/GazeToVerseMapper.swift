@@ -59,6 +59,9 @@ public final class GazeToVerseMapper: ObservableObject {
     private static let originalLineWidth: CGFloat = 1440
     private static let originalLineHeight: CGFloat = 232
     
+    /// Multiplier to match QuranPageView's internal line height scaling.
+    private static let lineHeightScale: CGFloat = 0.73
+    
     // MARK: - Page Geometry Cache
     
     /// Cached geometry for the current page, set when the page view measures itself.
@@ -82,7 +85,7 @@ public final class GazeToVerseMapper: ObservableObject {
         // Each line occupies an equal fraction of the remaining height
         let availableWidth = frame.width
         let calculatedLineHeight = availableWidth / Self.originalLineWidth * Self.originalLineHeight
-        self.lineHeight = calculatedLineHeight * 0.73  // Match the 0.73 factor from QuranPageView
+        self.lineHeight = calculatedLineHeight * Self.lineHeightScale  // Match the 0.73 factor from QuranPageView
     }
     
     /// Map a screen-space gaze point to a line and verse on the current page.

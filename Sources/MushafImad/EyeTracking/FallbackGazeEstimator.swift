@@ -78,11 +78,13 @@ public final class FallbackGazeEstimator: ObservableObject {
         isActive = true
         
         // Update estimated position at ~4 Hz (enough for smooth progress)
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.updateEstimatedGaze()
             }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        updateTimer = timer
         
         AppLogger.shared.debug("Fallback gaze estimator started", category: .ui)
     }
@@ -116,6 +118,11 @@ public final class FallbackGazeEstimator: ObservableObject {
     public func resetPageTimer() {
         pageStartTime = Date()
         pausedDuration = 0
+    }
+    
+    /// Update geometry manually if it changes during active estimation
+    public func updateGeometry(frame: CGRect) {
+        currentPageFrame = frame
     }
     
     // MARK: - Internal
