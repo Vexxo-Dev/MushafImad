@@ -48,6 +48,11 @@ public final class ReadingProgressTracker: ObservableObject {
     /// Last reading session result (for persistence).
     @Published public private(set) var currentSession: ReadingSession?
     
+    /// Sessions finalized during page transitions but not yet written to SwiftData.
+    /// Accumulating into a buffer prevents a session from being overwritten when
+    /// ``startTracking`` calls ``stopTracking`` before ``persistSession(context:)`` runs.
+    private var pendingSessions: [ReadingSession] = []
+    
     // MARK: - Configuration
     
     /// Minimum dwell time in seconds before a verse is considered "being read".
@@ -90,6 +95,9 @@ public final class ReadingProgressTracker: ObservableObject {
     /// Current page context
     private var currentPageNumber: Int = 0
     private var currentPageVerses: [Verse] = []
+    
+    /// Sessions that are waiting to be persisted (e.g. from previous page turns).
+    private var pendingSessions: [ReadingSession] = []
     
     /// Cancellable subscriptions
     private var cancellables = Set<AnyCancellable>()
@@ -138,8 +146,10 @@ public final class ReadingProgressTracker: ObservableObject {
         guard isTracking else { return }
         isTracking = false
         
-        // Create final session for persistence
-        finalizeSession()
+        // Create final session for persistence and add to pending queue
+        if let session = finalizeSession() {
+            pendingSessions.append(session)
+        }
         
         // Reset state
         currentDwellVerse = nil
@@ -248,8 +258,9 @@ public final class ReadingProgressTracker: ObservableObject {
     
     // MARK: - Session Persistence
     
-    private func finalizeSession() {
-        guard let startTime = sessionStartTime else { return }
+    @discardableResult
+    private func finalizeSession() -> ReadingSession? {
+        guard let startTime = sessionStartTime else { return nil }
         
         let verse = activeVerse
         let avgConfidence: Float
@@ -279,20 +290,29 @@ public final class ReadingProgressTracker: ObservableObject {
             "Reading session finalized — page \(currentPageNumber), verse \(verse?.chapterNumber ?? 0):\(verse?.number ?? 0), duration \(String(format: "%.1f", Date().timeIntervalSince(startTime)))s",
             category: .ui
         )
+        
+        return session
     }
     
     /// Persist the current session to SwiftData.
     ///
     /// - Parameter context: The SwiftData model context to save into.
     public func persistSession(context: ModelContext) {
-        guard let session = currentSession else { return }
-        context.insert(session)
+        guard !pendingSessions.isEmpty else {
+            AppLogger.shared.debug("No pending reading sessions to persist", category: .ui)
+            return
+        }
+        
+        for session in pendingSessions {
+            context.insert(session)
+        }
         
         do {
             try context.save()
-            AppLogger.shared.info("Reading session persisted to SwiftData", category: .ui)
+            AppLogger.shared.info("Persisted \(pendingSessions.count) reading session(s) to SwiftData", category: .ui)
+            pendingSessions.removeAll()
         } catch {
-            AppLogger.shared.error("Failed to persist reading session: \(error.localizedDescription)", category: .ui)
+            AppLogger.shared.error("Failed to persist reading sessions: \(error.localizedDescription)", category: .ui)
         }
     }
     

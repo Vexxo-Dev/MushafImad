@@ -12,6 +12,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import SwiftData
 
 /// Coordinates all eye-tracking subsystems and provides a single
 /// integration point for `MushafView`.
@@ -176,11 +177,16 @@ public final class EyeTrackingCoordinator: ObservableObject {
         if eyeTrackingService.isSupported && !useFallbackMode {
             progressTracker.trackingMethod = .eyeTracking
             eyeTrackingService.startTracking()
-        } else if useFallbackMode || !eyeTrackingService.isSupported {
+        } else if useFallbackMode {
+            // User has explicitly requested heuristic (fallback) mode
             progressTracker.trackingMethod = .heuristic
             fallbackEstimator.arabicWordsPerMinute = readingSpeed
             fallbackEstimator.startForPage(pageFrame: pageFrame)
             trackingState = .tracking(GazePoint(screenPosition: .zero, confidence: 0.5))
+        } else {
+            // TrueDepth unsupported and fallback mode is off — do not start heuristic tracking
+            progressTracker.trackingMethod = .eyeTracking
+            trackingState = .unavailable(reason: String(localized: "TrueDepth camera is required but not available on this device."))
         }
         
         AppLogger.shared.info("Eye tracking coordinator activated for page \(pageNumber)", category: .ui)

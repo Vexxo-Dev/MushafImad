@@ -233,6 +233,13 @@ public struct MushafView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
+        .onChange(of: showEyeTrackingSettings) { _, isShowing in
+            if isShowing {
+                eyeTrackingCoordinator.pause()
+            } else if eyeTrackingCoordinator.isEnabled {
+                eyeTrackingCoordinator.resume()
+            }
+        }
     }
     // MARK: - Verse Action Bar
 
@@ -437,28 +444,46 @@ public struct MushafView: View {
                     .onAppear {
                         let frame = geo.frame(in: .global)
                         pageContentFrame = frame
-                        if eyeTrackingCoordinator.isEnabled {
-                            let verses = RealmService.shared.getVersesForPage(pageNumber)
-                            eyeTrackingCoordinator.activate(
-                                pageNumber: pageNumber,
-                                verses: verses,
-                                pageFrame: frame,
-                                onPageCompleted: {
-                                    if pageNumber < 604 {
-                                        withAnimation {
-                                            viewModel.scrollPosition = pageNumber + 1
-                                        }
-                                    }
-                                }
-                            )
+                        // Only activate if this is the currently-visible page
+                        if eyeTrackingCoordinator.isEnabled && viewModel.scrollPosition == pageNumber {
+                            activateTracking(for: pageNumber, frame: frame)
+                        }
+                    }
+                    .onChange(of: eyeTrackingCoordinator.isEnabled) { _, enabled in
+                        // Re-activate when the user enables tracking while this page is visible
+                        if enabled && viewModel.scrollPosition == pageNumber {
+                            activateTracking(for: pageNumber, frame: geo.frame(in: .global))
+                        }
+                    }
+                    .onChange(of: viewModel.scrollPosition) { _, newPage in
+                        // Activate when this page becomes the active scroll position
+                        if eyeTrackingCoordinator.isEnabled && newPage == pageNumber {
+                            activateTracking(for: pageNumber, frame: geo.frame(in: .global))
                         }
                     }
                     .onChange(of: geo.frame(in: .global)) { _, newFrame in
                         pageContentFrame = newFrame
-                        if eyeTrackingCoordinator.isEnabled {
+                        // Only update geometry for the current page to avoid stale overrides
+                        if eyeTrackingCoordinator.isEnabled && viewModel.scrollPosition == pageNumber {
                             eyeTrackingCoordinator.updateGeometry(frame: newFrame)
                         }
                     }
+            }
+        )
+    }
+
+    private func activateTracking(for pageNumber: Int, frame: CGRect) {
+        let verses = RealmService.shared.getVersesForPage(pageNumber)
+        eyeTrackingCoordinator.activate(
+            pageNumber: pageNumber,
+            verses: verses,
+            pageFrame: frame,
+            onPageCompleted: {
+                if pageNumber < 604 {
+                    withAnimation {
+                        viewModel.scrollPosition = pageNumber + 1
+                    }
+                }
             }
         )
     }

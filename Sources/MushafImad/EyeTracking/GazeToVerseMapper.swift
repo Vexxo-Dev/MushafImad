@@ -105,34 +105,46 @@ public final class GazeToVerseMapper: ObservableObject {
             return nil
         }
         
-        // Convert screen position to page-relative position
-        let relativeY = screenPos.y - pageFrame.minY - headerHeight
-        let relativeX = screenPos.x - pageFrame.minX
+        // Position relative to the page's top-left origin
+        let pageRelativeY = screenPos.y - pageFrame.minY
+        let pageRelativeX = screenPos.x - pageFrame.minX
         
-        // Determine which line the gaze falls on
+        // The vertical band occupied by the rendered lines:
+        //   top  = headerHeight (matches the PageHeaderView height passed by caller)
+        //   bottom = top + lineHeight * linesPerPage
         guard lineHeight > 0 else { return nil }
-        let lineIndex = Int(relativeY / lineHeight)
+        let lineBandTop: CGFloat = headerHeight
+        let lineBandBottom: CGFloat = lineBandTop + lineHeight * CGFloat(Self.linesPerPage)
         
-        // Clamp to valid line range
-        let clampedLine = min(Self.linesPerPage - 1, max(0, lineIndex))
+        // Return nil for header and footer regions — do NOT clamp into line 0 or 14
+        guard pageRelativeY >= lineBandTop && pageRelativeY <= lineBandBottom else {
+            return nil
+        }
+        
+        // Determine which line the gaze falls on relative to the band start
+        let relativeYInBand = pageRelativeY - lineBandTop
+        let lineIndex = Int(relativeYInBand / lineHeight)
+        
+        // Safety clamp (should always be in range given the guard above)
+        guard lineIndex >= 0 && lineIndex < Self.linesPerPage else {
+            return nil
+        }
         
         // Progress within the line (0 = top, 1 = bottom)
-        let lineProgress = (relativeY - CGFloat(clampedLine) * lineHeight) / lineHeight
+        let lineProgress = (relativeYInBand - CGFloat(lineIndex) * lineHeight) / lineHeight
         let clampedProgress = min(1.0, max(0.0, lineProgress))
         
-        // Find the verse at this position
-        // The page is RTL, so we need to account for that
-        let normalizedX = relativeX / pageFrame.width
+        // Find the verse at this position (page uses RTL layout)
+        let normalizedX = pageRelativeX / pageFrame.width
         
-        // Find the verse whose highlight region on this line contains the gaze X position
         let matchedVerse = findVerseAtPosition(
             normalizedX: Float(normalizedX),
-            lineIndex: clampedLine,
+            lineIndex: lineIndex,
             verses: verses
         )
         
         return MappedGazeResult(
-            lineIndex: clampedLine,
+            lineIndex: lineIndex,
             verse: matchedVerse,
             verseID: matchedVerse?.verseID,
             confidence: gazePoint.confidence,
