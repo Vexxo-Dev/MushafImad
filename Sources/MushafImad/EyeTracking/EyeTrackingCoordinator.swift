@@ -167,20 +167,24 @@ public final class EyeTrackingCoordinator: ObservableObject {
         progressTracker.onPageCompleted = onPageCompleted
         
         // Start tracking
-        progressTracker.startTracking(
-            pageNumber: pageNumber,
-            verses: verses,
-            pageFrame: pageFrame
-        )
-        
         // Start the appropriate gaze source
         if eyeTrackingService.isSupported && !useFallbackMode {
             progressTracker.trackingMethod = .eyeTracking
             eyeTrackingService.startTracking()
+            progressTracker.startTracking(
+                pageNumber: pageNumber,
+                verses: verses,
+                pageFrame: pageFrame
+            )
         } else if useFallbackMode {
             // User has explicitly requested heuristic (fallback) mode
             progressTracker.trackingMethod = .heuristic
             fallbackEstimator.arabicWordsPerMinute = readingSpeed
+            progressTracker.startTracking(
+                pageNumber: pageNumber,
+                verses: verses,
+                pageFrame: pageFrame
+            )
             fallbackEstimator.startForPage(pageFrame: pageFrame)
             trackingState = .tracking(GazePoint(screenPosition: .zero, confidence: 0.5))
         } else {

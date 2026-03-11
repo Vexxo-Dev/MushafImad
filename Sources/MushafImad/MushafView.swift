@@ -176,6 +176,8 @@ public struct MushafView: View {
             if newMode == .text {
                 let page = viewModel.scrollPosition ?? initialPage ?? 1
                 textModeInitialChapter = RealmService.shared.getChapterForPage(page)?.number ?? 1
+                eyeTrackingCoordinator.deactivate(context: modelContext)
+                pageContentFrame = .zero
             }
         }
         .toolbar {
@@ -451,8 +453,12 @@ public struct MushafView: View {
                     }
                     .onChange(of: eyeTrackingCoordinator.isEnabled) { _, enabled in
                         // Re-activate when the user enables tracking while this page is visible
-                        if enabled && viewModel.scrollPosition == pageNumber {
-                            activateTracking(for: pageNumber, frame: geo.frame(in: .global))
+                        if enabled {
+                            if viewModel.scrollPosition == pageNumber {
+                                activateTracking(for: pageNumber, frame: geo.frame(in: .global))
+                            }
+                        } else {
+                            eyeTrackingCoordinator.deactivate(context: modelContext)
                         }
                     }
                     .onChange(of: viewModel.scrollPosition) { _, newPage in

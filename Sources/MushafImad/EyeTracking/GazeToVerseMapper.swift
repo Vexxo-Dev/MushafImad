@@ -18,9 +18,6 @@ public struct MappedGazeResult: Equatable, Sendable {
     /// The line index (0–14) that the gaze falls on.
     public let lineIndex: Int
     
-    /// The verse that the gaze is closest to on this line (nil if no verse occupies this region).
-    public let verse: Verse?
-    
     /// The verse's identifier — useful for quick equality checks.
     public let verseID: Int?
     
@@ -145,7 +142,6 @@ public final class GazeToVerseMapper: ObservableObject {
         
         return MappedGazeResult(
             lineIndex: lineIndex,
-            verse: matchedVerse,
             verseID: matchedVerse?.verseID,
             confidence: gazePoint.confidence,
             lineProgress: clampedProgress

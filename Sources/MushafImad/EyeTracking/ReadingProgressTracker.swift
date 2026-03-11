@@ -83,6 +83,9 @@ public final class ReadingProgressTracker: ObservableObject {
     private var currentDwellVerse: Verse?
     private var dwellStartTime: Date?
     
+    /// The verse most recently mapped from a gaze point (even if dwell threshold not met).
+    private var lastMappedVerse: Verse?
+    
     /// For page completion detection
     private var lastLineDwellStart: Date?
     
@@ -95,9 +98,6 @@ public final class ReadingProgressTracker: ObservableObject {
     /// Current page context
     private var currentPageNumber: Int = 0
     private var currentPageVerses: [Verse] = []
-    
-    /// Sessions that are waiting to be persisted (e.g. from previous page turns).
-    private var pendingSessions: [ReadingSession] = []
     
     /// Cancellable subscriptions
     private var cancellables = Set<AnyCancellable>()
@@ -135,6 +135,7 @@ public final class ReadingProgressTracker: ObservableObject {
         sessionVerseID = nil
         confidenceAccumulator = 0
         confidenceSampleCount = 0
+        lastMappedVerse = nil
         
         isTracking = true
         
@@ -188,6 +189,11 @@ public final class ReadingProgressTracker: ObservableObject {
         // Dwell detection
         processDwellDetection(result: result)
         
+        // Update last mapped verse immediately (even if dwell not confirmed)
+        if let verseID = result.verseID {
+            lastMappedVerse = currentPageVerses.first(where: { $0.verseID == verseID })
+        }
+        
         // Page completion detection
         processPageCompletion(lineIndex: result.lineIndex)
     }
@@ -200,8 +206,12 @@ public final class ReadingProgressTracker: ObservableObject {
     // MARK: - Dwell Detection
     
     private func processDwellDetection(result: MappedGazeResult) {
-        guard let verse = result.verse else {
-            // Gaze is on a line but not on any verse — could be a header or gap
+        let verse = currentPageVerses.first(where: { $0.verseID == result.verseID })
+        
+        guard let verse = verse else {
+            // Gaze is on a line but not on any verse — reset dwell timer
+            currentDwellVerse = nil
+            dwellStartTime = nil
             return
         }
         
@@ -262,7 +272,7 @@ public final class ReadingProgressTracker: ObservableObject {
     private func finalizeSession() -> ReadingSession? {
         guard let startTime = sessionStartTime else { return nil }
         
-        let verse = activeVerse
+        let verse = activeVerse ?? lastMappedVerse
         let avgConfidence: Float
         if confidenceSampleCount > 0 {
             avgConfidence = confidenceAccumulator / Float(confidenceSampleCount)
