@@ -52,13 +52,15 @@ public final class EyeTrackingCoordinator: ObservableObject {
     ///
     /// Passing `context` when disabling ensures any buffered sessions are
     /// flushed to SwiftData before the coordinator clears its state.
+    ///
+    /// When enabling, this method **only** sets `isEnabled = true`.
+    /// The actual service start (including gaze-binding setup and
+    /// `progressTracker` configuration) is deferred to the next call to
+    /// `activate(pageNumber:verses:pageFrame:onPageCompleted:)`, which
+    /// guarantees that all subsystems are ready before gaze samples arrive.
     public func setEnabled(_ enabled: Bool, context: ModelContext? = nil) {
         isEnabled = enabled
-        if enabled {
-            if eyeTrackingService.isSupported && !useFallbackMode {
-                eyeTrackingService.startTracking()
-            }
-        } else {
+        if !enabled {
             deactivate(context: context)
         }
     }
