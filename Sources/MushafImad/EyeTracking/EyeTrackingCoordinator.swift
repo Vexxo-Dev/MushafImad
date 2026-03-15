@@ -45,8 +45,8 @@ public final class EyeTrackingCoordinator: ObservableObject {
     @Published public var trackingState: EyeTrackingState = .inactive
     
     /// Whether the feature is enabled by the user.
-    @AppStorage("eye_tracking_enabled") public var isEnabled: Bool = false
-    @AppStorage("eye_tracking_auto_highlight") private var autoHighlight: Bool = true
+    @AppStorage("mushaf_imad_eye_tracking_enabled") public var isEnabled: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_auto_highlight") private var autoHighlight: Bool = true
     
     /// Enable or disable eye-tracking.
     ///
@@ -64,12 +64,12 @@ public final class EyeTrackingCoordinator: ObservableObject {
             deactivate(context: context)
         }
     }
-    @AppStorage("eye_tracking_auto_advance") private var autoAdvance: Bool = false
-    @AppStorage("eye_tracking_show_overlay") public var showOverlay: Bool = false
-    @AppStorage("eye_tracking_show_debug") public var showDebugInfo: Bool = false
-    @AppStorage("eye_tracking_dwell_time") private var dwellTime: Double = 1.5
-    @AppStorage("eye_tracking_reading_speed") private var readingSpeed: Double = 80
-    @AppStorage("eye_tracking_use_fallback") private var useFallbackMode: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_auto_advance") private var autoAdvance: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_show_overlay") public var showOverlay: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_show_debug") public var showDebugInfo: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_dwell_time") private var dwellTime: Double = 1.5
+    @AppStorage("mushaf_imad_eye_tracking_reading_speed") private var readingSpeed: Double = 80
+    @AppStorage("mushaf_imad_eye_tracking_use_fallback") private var useFallbackMode: Bool = false
     
     // MARK: - Private
     

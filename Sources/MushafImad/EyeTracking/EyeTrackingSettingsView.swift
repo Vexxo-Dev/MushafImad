@@ -18,14 +18,14 @@ public struct EyeTrackingSettingsView: View {
     
     // MARK: - Settings
     
-    @AppStorage("eye_tracking_enabled") private var isEnabled: Bool = false
-    @AppStorage("eye_tracking_auto_highlight") private var autoHighlight: Bool = true
-    @AppStorage("eye_tracking_auto_advance") private var autoAdvance: Bool = false
-    @AppStorage("eye_tracking_show_overlay") private var showOverlay: Bool = false
-    @AppStorage("eye_tracking_show_debug") private var showDebugInfo: Bool = false
-    @AppStorage("eye_tracking_dwell_time") private var dwellTime: Double = 1.5
-    @AppStorage("eye_tracking_reading_speed") private var readingSpeed: Double = 80
-    @AppStorage("eye_tracking_use_fallback") private var useFallbackMode: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_enabled") private var isEnabled: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_auto_highlight") private var autoHighlight: Bool = true
+    @AppStorage("mushaf_imad_eye_tracking_auto_advance") private var autoAdvance: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_show_overlay") private var showOverlay: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_show_debug") private var showDebugInfo: Bool = false
+    @AppStorage("mushaf_imad_eye_tracking_dwell_time") private var dwellTime: Double = 1.5
+    @AppStorage("mushaf_imad_eye_tracking_reading_speed") private var readingSpeed: Double = 80
+    @AppStorage("mushaf_imad_eye_tracking_use_fallback") private var useFallbackMode: Bool = false
     
     // MARK: - Environment
     
