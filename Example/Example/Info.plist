@@ -15,5 +15,7 @@
 	<array>
 		<string>Kitab-Bold.ttf</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is used for eye tracking to follow your reading progress in the Quran.</string>
 </dict>
 </plist>
