@@ -21,7 +21,7 @@ import Combine
 /// 3. Account for pauses (app backgrounding, user interaction) by freezing the timer.
 /// 4. Publish estimated gaze points that the `ReadingProgressTracker` can consume.
 @MainActor
-public final class FallbackGazeEstimator: ObservableObject {
+internal final class FallbackGazeEstimator: ObservableObject {
     
     // MARK: - Published
     

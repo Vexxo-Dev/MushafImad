@@ -66,7 +66,7 @@ public enum EyeTrackingState: Sendable, Equatable {
 /// - Note: Requires iPhone X or later (TrueDepth camera).
 ///   Falls back to `.unavailable` on unsupported devices.
 @MainActor
-public final class EyeTrackingService: NSObject, ObservableObject {
+internal final class EyeTrackingService: NSObject, ObservableObject {
     
     // MARK: - Published State
     

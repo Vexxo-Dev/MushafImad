@@ -27,11 +27,11 @@ import SwiftData
 @MainActor
 public final class EyeTrackingCoordinator: ObservableObject {
     
-    // MARK: - Sub-services (public for settings binding)
+    // MARK: - Sub-services (internal for implementation)
     
-    public let eyeTrackingService = EyeTrackingService()
-    public let fallbackEstimator = FallbackGazeEstimator()
-    public let progressTracker = ReadingProgressTracker()
+    internal let eyeTrackingService = EyeTrackingService()
+    internal let fallbackEstimator = FallbackGazeEstimator()
+    internal let progressTracker = ReadingProgressTracker()
     
     // MARK: - Published State
     

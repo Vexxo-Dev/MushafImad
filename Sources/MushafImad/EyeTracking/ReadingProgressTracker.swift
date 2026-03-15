@@ -26,7 +26,7 @@ import SwiftData
 /// 4. Detect page completion and trigger auto-advance
 /// 5. Persist reading sessions via SwiftData
 @MainActor
-public final class ReadingProgressTracker: ObservableObject {
+internal final class ReadingProgressTracker: ObservableObject {
     
     // MARK: - Published State
     

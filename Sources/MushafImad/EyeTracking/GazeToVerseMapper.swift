@@ -45,7 +45,7 @@ public struct MappedGazeResult: Equatable, Sendable {
 /// This mapper uses the page's geometry to determine which line and verse
 /// the user is looking at.
 @MainActor
-public final class GazeToVerseMapper: ObservableObject {
+internal final class GazeToVerseMapper: ObservableObject {
     
     // MARK: - Configuration
     
