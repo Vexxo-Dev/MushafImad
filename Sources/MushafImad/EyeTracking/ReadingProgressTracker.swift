@@ -56,10 +56,28 @@ internal final class ReadingProgressTracker: ObservableObject {
     // MARK: - Configuration
     
     /// Minimum dwell time in seconds before a verse is considered "being read".
-    public var dwellTimeThreshold: TimeInterval = 1.5
+    /// Valid range: > 0
+    public var dwellTimeThreshold: TimeInterval = 1.5 {
+        didSet {
+            guard dwellTimeThreshold > 0 else {
+                dwellTimeThreshold = oldValue
+                assertionFailure("dwellTimeThreshold must be greater than 0")
+                return
+            }
+        }
+    }
     
     /// Time in seconds the user must dwell on the last line to trigger auto-advance.
-    public var pageCompletionDwellTime: TimeInterval = 3.0
+    /// Valid range: > 0
+    public var pageCompletionDwellTime: TimeInterval = 3.0 {
+        didSet {
+            guard pageCompletionDwellTime > 0 else {
+                pageCompletionDwellTime = oldValue
+                assertionFailure("pageCompletionDwellTime must be greater than 0")
+                return
+            }
+        }
+    }
     
     /// Whether to automatically advance to the next page when page is completed.
     public var autoAdvanceEnabled: Bool = true

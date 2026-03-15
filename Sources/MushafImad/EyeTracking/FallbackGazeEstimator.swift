@@ -36,13 +36,30 @@ internal final class FallbackGazeEstimator: ObservableObject {
     /// Average Arabic reading speed in words per minute.
     /// Quran reading tends to be slower due to tajweed rules.
     /// Typical range: 50–120 WPM for careful Arabic reading.
+    /// Valid range: > 0
     public var arabicWordsPerMinute: Double = 80 {
-        didSet { recalculateRate() }
+        didSet {
+            guard arabicWordsPerMinute > 0 else {
+                arabicWordsPerMinute = oldValue
+                assertionFailure("arabicWordsPerMinute must be greater than 0")
+                return
+            }
+            recalculateRate()
+        }
     }
     
     /// Approximate number of words per line in the Mushaf.
     /// Standard Hafs 1441 layout has roughly 8–12 words per line.
-    public var wordsPerLine: Double = 10
+    /// Valid range: > 0
+    public var wordsPerLine: Double = 10 {
+        didSet {
+            guard wordsPerLine > 0 else {
+                wordsPerLine = oldValue
+                assertionFailure("wordsPerLine must be greater than 0")
+                return
+            }
+        }
+    }
     
     /// Number of lines per page.
     public let linesPerPage: Int = 15

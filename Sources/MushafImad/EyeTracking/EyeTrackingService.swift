@@ -83,14 +83,41 @@ internal final class EyeTrackingService: NSObject, ObservableObject {
     
     /// Multiplier used to scale the gaze direction vector from the face lookAtPoint 
     /// to screen bounds, effectively controlling the tracking sensitivity based on user distance.
-    public var gazeProjectionScale: Float = 8.0
+    /// Valid range: > 0
+    public var gazeProjectionScale: Float = 8.0 {
+        didSet {
+            guard gazeProjectionScale > 0 else {
+                gazeProjectionScale = oldValue
+                assertionFailure("gazeProjectionScale must be greater than 0")
+                return
+            }
+        }
+    }
     
     /// Minimum confidence threshold — gaze samples below this are discarded.
-    public var minimumConfidence: Float = 0.3
+    /// Valid range: 0.0...1.0
+    public var minimumConfidence: Float = 0.3 {
+        didSet {
+            guard (0.0...1.0).contains(minimumConfidence) else {
+                minimumConfidence = max(0.0, min(1.0, minimumConfidence))
+                assertionFailure("minimumConfidence must be between 0.0 and 1.0 (clamped to valid range)")
+                return
+            }
+        }
+    }
     
     /// Smoothing factor for the Kalman-style filter (0 = no smoothing, 1 = full lag).
     /// A value around 0.7 works well for reading.
-    public var smoothingFactor: CGFloat = 0.7
+    /// Valid range: 0.0...1.0
+    public var smoothingFactor: CGFloat = 0.7 {
+        didSet {
+            guard (0.0...1.0).contains(smoothingFactor) else {
+                smoothingFactor = max(0.0, min(1.0, smoothingFactor))
+                assertionFailure("smoothingFactor must be between 0.0 and 1.0 (clamped to valid range)")
+                return
+            }
+        }
+    }
     
     // MARK: - Private
     
