@@ -2,7 +2,7 @@ name: iOS Build & Test
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "feature/eye-tracking-reading-progress" ]
   pull_request:
     branches: [ "main", "master" ]
 
