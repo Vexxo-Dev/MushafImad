@@ -83,6 +83,47 @@ A Swift Package that delivers a fully featured Mushaf (Quran) reading experience
 
 ## Using the Package
 
+### SwiftData Model Container Setup (Required for Eye Tracking)
+
+If you plan to use the **eye-tracking reading progress feature**, you must include the `ReadingSession` model in your app's SwiftData `ModelContainer` schema. This model persists reading sessions locally for progress tracking and resumption.
+
+**Add to your App initialization:**
+
+```swift
+import SwiftUI
+import SwiftData
+import MushafImad
+
+@main
+struct MyApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+        .modelContainer(for: [
+            ReadingSession.self  // Required for eye tracking persistence
+        ])
+    }
+}
+```
+
+**Why is this required?**
+- The `ReadingSession` model uses SwiftData's `@Model` macro for persistence
+- Apps that don't include it in their schema will crash at runtime when eye tracking attempts to save sessions
+- This is only needed if you enable the eye tracking feature
+
+**Migration for existing apps:**
+If your app already has a `ModelContainer`, simply add `ReadingSession.self` to your existing model array:
+
+```swift
+.modelContainer(for: [
+    YourExistingModel.self,
+    ReadingSession.self  // Add this
+])
+```
+
+### Basic Setup
+
 1. **Add the dependency**
 
    ```swift
@@ -109,6 +150,7 @@ A Swift Package that delivers a fully featured Mushaf (Quran) reading experience
                    .environmentObject(ReciterService.shared)
                    .environmentObject(ToastManager())
            }
+           .modelContainer(for: [ReadingSession.self])  // Required for eye tracking
        }
    }
    ```
