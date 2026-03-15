@@ -79,8 +79,9 @@ public final class FallbackGazeEstimator: ObservableObject {
         
         // Update estimated position at ~4 Hz (enough for smooth progress)
         let timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+            guard let self else { return }
             Task { @MainActor in
-                self?.updateEstimatedGaze()
+                self.updateEstimatedGaze()
             }
         }
         RunLoop.main.add(timer, forMode: .common)
