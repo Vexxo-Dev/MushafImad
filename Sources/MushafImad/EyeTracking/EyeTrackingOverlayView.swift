@@ -20,7 +20,7 @@ import SwiftUI
 ///
 /// This view is intended for development / research and can be toggled
 /// via `EyeTrackingSettingsView`.
-public struct EyeTrackingOverlayView: View {
+internal struct EyeTrackingOverlayView: View {
     @ObservedObject var tracker: ReadingProgressTracker
     var currentGaze: GazePoint?
     var showDebugInfo: Bool
@@ -29,7 +29,7 @@ public struct EyeTrackingOverlayView: View {
     @State private var gazeAnimationPosition: CGPoint = .zero
     @State private var pulseScale: CGFloat = 1.0
     
-    public init(
+    internal init(
         tracker: ReadingProgressTracker,
         currentGaze: GazePoint? = nil,
         showDebugInfo: Bool = false,
